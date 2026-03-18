@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers });
   }
 
-  const { name, email, message, website, _honeypot } = body as Record<string, string>;
+  const { name, email, message, website, _honeypot, ...extras } = body as Record<string, string>;
 
   // Honeypot check — bots fill this field, humans don't see it
   if (_honeypot) {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     replyTo: email,
     subject: `New message from ${name}${source}`,
     text: `Name: ${name}\nEmail: ${email}\nWebsite: ${website ?? "unknown"}\n\n${message}`,
-    html: emailTemplate({ name, email, message, website }),
+    html: emailTemplate({ name, email, message, website, extras }),
   });
 
   if (error) {
@@ -90,16 +90,30 @@ function escapeHtml(str: string) {
     .replace(/"/g, "&quot;");
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  clientWebsite: "Client Website",
+  service: "Service",
+  budget: "Budget",
+  phone: "Phone",
+  company: "Company",
+};
+
+function formatLabel(key: string) {
+  return FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
+}
+
 function emailTemplate({
   name,
   email,
   message,
   website,
+  extras,
 }: {
   name: string;
   email: string;
   message: string;
   website?: string;
+  extras?: Record<string, string>;
 }) {
   const site = website ?? "your website";
   const date = new Date().toLocaleDateString("en-US", {
@@ -146,6 +160,23 @@ function emailTemplate({
                   </td>
                 </tr>
               </table>
+
+              ${
+                extras && Object.keys(extras).length > 0
+                  ? `<!-- Extra fields -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;">
+                ${Object.entries(extras)
+                  .filter(([, v]) => v?.trim())
+                  .map(
+                    ([k, v], i) => `<tr style="background-color:${i % 2 === 0 ? "#f9f9fb" : "#ffffff"};">
+                  <td style="padding:10px 16px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;width:40%;border-right:1px solid #e4e4e7;">${formatLabel(k)}</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#18181b;">${escapeHtml(v)}</td>
+                </tr>`
+                  )
+                  .join("")}
+              </table>`
+                  : ""
+              }
 
               <!-- Message -->
               <p style="margin:0 0 10px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;">Message</p>
