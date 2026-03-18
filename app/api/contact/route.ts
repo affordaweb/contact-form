@@ -69,15 +69,9 @@ export async function POST(req: NextRequest) {
     from: process.env.FROM_EMAIL ?? "Contact Form <onboarding@resend.dev>",
     to: toEmail,
     replyTo: email,
-    subject: `New contact form submission${source}`,
+    subject: `New message from ${name}${source}`,
     text: `Name: ${name}\nEmail: ${email}\nWebsite: ${website ?? "unknown"}\n\n${message}`,
-    html: `
-      <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-      <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
-      ${website ? `<p><strong>Website:</strong> ${escapeHtml(website)}</p>` : ""}
-      <p><strong>Message:</strong></p>
-      <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
-    `,
+    html: emailTemplate({ name, email, message, website }),
   });
 
   if (error) {
@@ -94,4 +88,98 @@ function escapeHtml(str: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function emailTemplate({
+  name,
+  email,
+  message,
+  website,
+}: {
+  name: string;
+  email: string;
+  message: string;
+  website?: string;
+}) {
+  const site = website ?? "your website";
+  const date = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New message from ${escapeHtml(name)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#18181b;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#a1a1aa;letter-spacing:0.08em;text-transform:uppercase;">New message via</p>
+              <p style="margin:6px 0 0;font-size:20px;font-weight:700;color:#ffffff;">${escapeHtml(site)}</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:40px;">
+
+              <!-- Sender info -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;background-color:#f9f9fb;border-radius:8px;padding:20px;border:1px solid #e4e4e7;">
+                <tr>
+                  <td>
+                    <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;">From</p>
+                    <p style="margin:0;font-size:17px;font-weight:600;color:#18181b;">${escapeHtml(name)}</p>
+                    <p style="margin:4px 0 0;font-size:14px;color:#3f3f46;">
+                      <a href="mailto:${escapeHtml(email)}" style="color:#6366f1;text-decoration:none;">${escapeHtml(email)}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Message -->
+              <p style="margin:0 0 10px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;">Message</p>
+              <div style="background-color:#f9f9fb;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:20px 24px;margin-bottom:32px;">
+                <p style="margin:0;font-size:15px;line-height:1.7;color:#27272a;white-space:pre-wrap;">${escapeHtml(message)}</p>
+              </div>
+
+              <!-- Reply button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="mailto:${escapeHtml(email)}?subject=Re: your message"
+                      style="display:inline-block;background-color:#6366f1;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;">
+                      Reply to ${escapeHtml(name)}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f4f4f5;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#a1a1aa;">Received on ${date}</p>
+              <p style="margin:6px 0 0;font-size:12px;color:#a1a1aa;">Sent via <strong>AffordaWeb</strong> contact form API</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
