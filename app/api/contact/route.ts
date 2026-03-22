@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const ccEmail = process.env.CC_EMAIL;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const source = website ? ` via ${website}` : "";
   const from = process.env.FROM_EMAIL ?? "Contact Form <onboarding@resend.dev>";
@@ -198,6 +199,7 @@ export async function POST(req: NextRequest) {
     resend.emails.send({
       from,
       to: toEmail,
+      ...(ccEmail ? { cc: ccEmail } : {}),
       replyTo: email,
       subject: `New message from ${name}${source}`,
       text: `Name: ${name}\nEmail: ${email}\nWebsite: ${website ?? "unknown"}\n\n${message}`,
@@ -276,35 +278,40 @@ function adminEmailTemplate({
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0edf8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0edf8;padding:40px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
 
-        <tr><td style="background-color:#18181b;border-radius:12px 12px 0 0;padding:32px 40px;text-align:center;">
-          <p style="margin:0;font-size:13px;color:#a1a1aa;letter-spacing:0.08em;text-transform:uppercase;">New message via</p>
-          <p style="margin:6px 0 0;font-size:20px;font-weight:700;color:#fff;">${escapeHtml(site)}</p>
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#7C3AED 0%,#EC4899 100%);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:0.12em;text-transform:uppercase;">New message via</p>
+          <p style="margin:0 0 4px;font-size:22px;font-weight:700;color:#fff;">${escapeHtml(site)}</p>
+          <p style="margin:8px 0 0;display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);font-size:11px;padding:4px 14px;border-radius:100px;">You Are Seen. You Are Valid. You Are Home.</p>
         </td></tr>
 
+        <!-- Body -->
         <tr><td style="background-color:#fff;padding:40px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;background-color:#f9f9fb;border-radius:8px;padding:20px;border:1px solid #e4e4e7;">
+
+          <!-- From block -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;background:linear-gradient(135deg,#faf5ff,#fff0f9);border-radius:12px;padding:20px 24px;border:1px solid #e9d5ff;">
             <tr><td>
-              <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;">From</p>
-              <p style="margin:0;font-size:17px;font-weight:600;color:#18181b;">${escapeHtml(name)}</p>
-              <p style="margin:4px 0 0;font-size:14px;"><a href="mailto:${escapeHtml(email)}" style="color:#6366f1;text-decoration:none;">${escapeHtml(email)}</a></p>
+              <p style="margin:0 0 6px;font-size:11px;color:#9d74cf;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Message from</p>
+              <p style="margin:0;font-size:18px;font-weight:700;color:#3A3C51;">${escapeHtml(name)}</p>
+              <p style="margin:4px 0 0;font-size:14px;"><a href="mailto:${escapeHtml(email)}" style="color:#7C3AED;text-decoration:none;font-weight:500;">${escapeHtml(email)}</a></p>
             </td></tr>
           </table>
 
           ${
             extras && Object.entries(extras).filter(([, v]) => v?.trim()).length > 0
-              ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;">
+              ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;border-radius:10px;overflow:hidden;border:1px solid #e9d5ff;">
               ${Object.entries(extras)
                 .filter(([, v]) => v?.trim())
                 .map(
                   ([k, v], i) =>
-                    `<tr style="background-color:${i % 2 === 0 ? "#f9f9fb" : "#fff"};">
-                  <td style="padding:10px 16px;font-size:12px;color:#71717a;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;width:40%;border-right:1px solid #e4e4e7;">${formatLabel(k)}</td>
-                  <td style="padding:10px 16px;font-size:13px;color:#18181b;">${escapeHtml(v)}</td>
+                    `<tr style="background-color:${i % 2 === 0 ? "#faf5ff" : "#fff"};">
+                  <td style="padding:10px 16px;font-size:11px;color:#9d74cf;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:38%;border-right:1px solid #e9d5ff;">${formatLabel(k)}</td>
+                  <td style="padding:10px 16px;font-size:13px;color:#3A3C51;">${escapeHtml(v)}</td>
                 </tr>`
                 )
                 .join("")}
@@ -312,22 +319,26 @@ function adminEmailTemplate({
               : ""
           }
 
-          <p style="margin:0 0 10px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.06em;">Message</p>
-          <div style="background-color:#f9f9fb;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:20px 24px;margin-bottom:32px;">
-            <p style="margin:0;font-size:15px;line-height:1.7;color:#27272a;white-space:pre-wrap;">${escapeHtml(message)}</p>
+          <!-- Message -->
+          <p style="margin:0 0 10px;font-size:11px;color:#9d74cf;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Message</p>
+          <div style="background-color:#faf5ff;border-left:4px solid #7C3AED;border-radius:0 10px 10px 0;padding:20px 24px;margin-bottom:32px;">
+            <p style="margin:0;font-size:15px;line-height:1.75;color:#3A3C51;white-space:pre-wrap;">${escapeHtml(message)}</p>
           </div>
 
+          <!-- CTA -->
           <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-            <a href="mailto:${escapeHtml(email)}?subject=Re: your message"
-              style="display:inline-block;background-color:#6366f1;color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;">
+            <a href="mailto:${escapeHtml(email)}?subject=Re: your message to EmpowerQueer Hub"
+              style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#EC4899);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 40px;border-radius:100px;letter-spacing:0.01em;">
               Reply to ${escapeHtml(name)}
             </a>
           </td></tr></table>
         </td></tr>
 
-        <tr><td style="background-color:#f4f4f5;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#a1a1aa;">Received on ${date}</p>
-          <p style="margin:6px 0 0;font-size:12px;color:#a1a1aa;">Sent via <strong>AffordaWeb</strong> contact form API</p>
+        <!-- Footer -->
+        <tr><td style="background-color:#292733;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
+          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">EmpowerQueer Hub</p>
+          <p style="margin:0 0 8px;font-size:12px;color:#7A7A7A;">You Are Seen. You Are Valid. You Are Home.</p>
+          <p style="margin:0;font-size:11px;color:#555;">Received on ${date} · Powered by AffordaWeb</p>
         </td></tr>
 
       </table>
@@ -344,37 +355,49 @@ function confirmationTemplate({
   name: string;
   website?: string;
 }) {
-  const site = website ?? "our website";
+  const site = website ?? "EmpowerQueer Hub";
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f0edf8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0edf8;padding:40px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;">
 
-        <tr><td style="background-color:#18181b;border-radius:12px 12px 0 0;padding:40px;text-align:center;">
-          <div style="width:56px;height:56px;background-color:#6366f1;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <span style="color:#fff;font-size:24px;">✓</span>
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#7C3AED 0%,#EC4899 100%);border-radius:16px 16px 0 0;padding:40px;text-align:center;">
+          <div style="width:60px;height:60px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);border-radius:50%;display:inline-block;line-height:60px;margin-bottom:16px;">
+            <span style="color:#fff;font-size:26px;line-height:60px;">✓</span>
           </div>
-          <h1 style="margin:0;font-size:22px;font-weight:700;color:#fff;">Message Received</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:#a1a1aa;">Thanks for reaching out via ${escapeHtml(site)}</p>
+          <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#fff;">Message Received!</h1>
+          <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.8);">Thank you for reaching out via ${escapeHtml(site)}</p>
         </td></tr>
 
+        <!-- Body -->
         <tr><td style="background-color:#fff;padding:40px;">
-          <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#27272a;">
+          <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#3A3C51;font-weight:600;">
             Hi ${escapeHtml(name)},
           </p>
-          <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#27272a;">
-            We've received your message and will get back to you within <strong>24 hours</strong>.
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#474747;">
+            We&rsquo;ve received your message and a member of the EmpowerQueer Hub team will get back to you within <strong style="color:#7C3AED;">24–48 hours</strong>.
           </p>
-          <p style="margin:0;font-size:15px;line-height:1.7;color:#27272a;">
-            If your matter is urgent, you can reply directly to this email.
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.75;color:#474747;">
+            In the meantime, feel free to explore our resources, upcoming events, and community stories at <a href="https://www.empowerqueerhub.com" style="color:#7C3AED;text-decoration:none;font-weight:600;">empowerqueerhub.com</a>.
+          </p>
+          <div style="background:linear-gradient(135deg,#faf5ff,#fff0f9);border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b46a8;font-style:italic;">&ldquo;You Are Seen. You Are Valid. You Are Home.&rdquo;</p>
+            <p style="margin:6px 0 0;font-size:12px;color:#9d74cf;">— EmpowerQueer Hub</p>
+          </div>
+          <p style="margin:0;font-size:13px;color:#9A9A9A;line-height:1.6;">
+            If your matter is urgent, you can reply directly to this email or call us at <strong>+63 917 705 0413</strong>.
           </p>
         </td></tr>
 
-        <tr><td style="background-color:#f4f4f5;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#a1a1aa;">AffordaWeb Solutions &middot; hello@affordawebsolutions.com</p>
+        <!-- Footer -->
+        <tr><td style="background-color:#292733;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
+          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">EmpowerQueer Hub</p>
+          <p style="margin:0 0 6px;font-size:12px;color:#7A7A7A;">Batangas, Philippines · contact@empowerqueerhub.com</p>
+          <p style="margin:0;font-size:11px;color:#555;">Powered by AffordaWeb Solutions</p>
         </td></tr>
 
       </table>
