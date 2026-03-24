@@ -287,7 +287,7 @@ function adminEmailTemplate({
         <tr><td style="background:linear-gradient(135deg,#7C3AED 0%,#EC4899 100%);border-radius:16px 16px 0 0;padding:36px 40px;text-align:center;">
           <p style="margin:0 0 6px;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:0.12em;text-transform:uppercase;">New message via</p>
           <p style="margin:0 0 4px;font-size:22px;font-weight:700;color:#fff;">${escapeHtml(site)}</p>
-          <p style="margin:8px 0 0;display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);font-size:11px;padding:4px 14px;border-radius:100px;">You Are Seen. You Are Valid. You Are Home.</p>
+          <p style="margin:8px 0 0;display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);font-size:11px;padding:4px 14px;border-radius:100px;">New Contact Form Submission</p>
         </td></tr>
 
         <!-- Body -->
@@ -327,7 +327,7 @@ function adminEmailTemplate({
 
           <!-- CTA -->
           <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-            <a href="mailto:${escapeHtml(email)}?subject=Re: your message to EmpowerQueer Hub"
+            <a href="mailto:${escapeHtml(email)}?subject=Re: your message to ${escapeHtml(site)}"
               style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#EC4899);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 40px;border-radius:100px;letter-spacing:0.01em;">
               Reply to ${escapeHtml(name)}
             </a>
@@ -336,8 +336,7 @@ function adminEmailTemplate({
 
         <!-- Footer -->
         <tr><td style="background-color:#292733;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
-          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">EmpowerQueer Hub</p>
-          <p style="margin:0 0 8px;font-size:12px;color:#7A7A7A;">You Are Seen. You Are Valid. You Are Home.</p>
+          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">${escapeHtml(site)}</p>
           <p style="margin:0;font-size:11px;color:#555;">Received on ${date} · Powered by AffordaWeb</p>
         </td></tr>
 
@@ -355,7 +354,7 @@ function confirmationTemplate({
   name: string;
   website?: string;
 }) {
-  const site = website ?? "EmpowerQueer Hub";
+  const site = website ?? "us";
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
@@ -379,24 +378,16 @@ function confirmationTemplate({
             Hi ${escapeHtml(name)},
           </p>
           <p style="margin:0 0 16px;font-size:15px;line-height:1.75;color:#474747;">
-            We&rsquo;ve received your message and a member of the EmpowerQueer Hub team will get back to you within <strong style="color:#7C3AED;">24–48 hours</strong>.
+            We&rsquo;ve received your message and our team will get back to you within <strong style="color:#7C3AED;">24–48 hours</strong>.
           </p>
-          <p style="margin:0 0 24px;font-size:15px;line-height:1.75;color:#474747;">
-            In the meantime, feel free to explore our resources, upcoming events, and community stories at <a href="https://www.empowerqueerhub.com" style="color:#7C3AED;text-decoration:none;font-weight:600;">empowerqueerhub.com</a>.
-          </p>
-          <div style="background:linear-gradient(135deg,#faf5ff,#fff0f9);border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
-            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b46a8;font-style:italic;">&ldquo;You Are Seen. You Are Valid. You Are Home.&rdquo;</p>
-            <p style="margin:6px 0 0;font-size:12px;color:#9d74cf;">— EmpowerQueer Hub</p>
-          </div>
           <p style="margin:0;font-size:13px;color:#9A9A9A;line-height:1.6;">
-            If your matter is urgent, you can reply directly to this email or call us at <strong>+63 917 705 0413</strong>.
+            If your matter is urgent, you can reply directly to this email.
           </p>
         </td></tr>
 
         <!-- Footer -->
         <tr><td style="background-color:#292733;border-radius:0 0 16px 16px;padding:24px 40px;text-align:center;">
-          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">EmpowerQueer Hub</p>
-          <p style="margin:0 0 6px;font-size:12px;color:#7A7A7A;">Batangas, Philippines · contact@empowerqueerhub.com</p>
+          <p style="margin:0 0 4px;font-size:13px;color:#fff;font-weight:600;">${escapeHtml(site)}</p>
           <p style="margin:0;font-size:11px;color:#555;">Powered by AffordaWeb Solutions</p>
         </td></tr>
 
