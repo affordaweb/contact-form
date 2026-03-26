@@ -179,16 +179,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const toEmail = process.env.TO_EMAIL;
+  // Per-site email routing — stored as JSON in SITE_EMAILS env var
+  // e.g. {"ascend":{"to":"info@ascend.org","cc":"cc@ascend.org"}}
+  let toEmail: string | undefined;
+  let ccEmail: string | undefined;
+
+  const siteEmailsRaw = process.env.SITE_EMAILS;
+  if (siteEmailsRaw && website) {
+    try {
+      const siteEmails = JSON.parse(siteEmailsRaw) as Record<string, { to?: string; cc?: string }>;
+      const siteEntry = siteEmails[website];
+      if (siteEntry) {
+        toEmail = siteEntry.to;
+        ccEmail = siteEntry.cc;
+      }
+    } catch {
+      console.error("Invalid SITE_EMAILS JSON");
+    }
+  }
+
+  // Fall back to global TO_EMAIL / CC_EMAIL
+  if (!toEmail) toEmail = process.env.TO_EMAIL;
+  if (!ccEmail) ccEmail = process.env.CC_EMAIL;
+
   if (!toEmail) {
-    console.error("TO_EMAIL env var is not set");
+    console.error("No TO email resolved for website:", website);
     return NextResponse.json(
       { error: "Server misconfiguration" },
       { status: 500, headers }
     );
   }
-
-  const ccEmail = process.env.CC_EMAIL;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const source = website ? ` via ${website}` : "";
   const from = process.env.FROM_EMAIL ?? "Contact Form <onboarding@resend.dev>";
