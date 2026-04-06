@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 .next/
 node_modules/
 .env
 .env.local
 .vercel
-=======
-node_modules
-.env
->>>>>>> 5df9a9a (Update email. and Turnstile verification)
