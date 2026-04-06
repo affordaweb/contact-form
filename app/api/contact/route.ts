@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
+// ── Turnstile verification ────────────────────────────────────────────────────
+async function verifyTurnstile(token: string): Promise<boolean> {
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: token,
+    }),
+  });
+  const data = await res.json() as { success: boolean };
+  return data.success === true;
+}
+
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 5;
@@ -157,11 +171,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers });
   }
 
-  const { name, email, message, website, _honeypot, ...extras } =
+  const { name, email, message, website, _honeypot, turnstileToken, ...extras } =
     body as Record<string, string>;
 
   if (_honeypot) {
     return NextResponse.json({ ok: true }, { status: 200, headers });
+  }
+
+  if (process.env.TURNSTILE_SECRET_KEY) {
+    if (!turnstileToken) {
+      return NextResponse.json({ error: "Missing verification token" }, { status: 400, headers });
+    }
+    const valid = await verifyTurnstile(turnstileToken);
+    if (!valid) {
+      return NextResponse.json({ error: "Turnstile verification failed" }, { status: 403, headers });
+    }
   }
 
   if (!name?.trim() || !email?.trim() || !message?.trim()) {
