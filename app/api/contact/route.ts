@@ -37,10 +37,11 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
+const TRUSTED_ORIGINS = ["https://lgbt-ku-ila.vercel.app"];
 
 function corsHeaders(origin: string | null) {
   const allowed =
-    origin && ALLOWED_ORIGINS.length > 0 && ALLOWED_ORIGINS.includes(origin)
+    origin && (ALLOWED_ORIGINS.includes(origin) || TRUSTED_ORIGINS.includes(origin))
       ? origin
       : ALLOWED_ORIGINS[0] ?? "*";
   return {
