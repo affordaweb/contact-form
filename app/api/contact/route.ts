@@ -165,13 +165,23 @@ export async function POST(req: NextRequest) {
   }
 
   let body: Record<string, unknown>;
+  let uploadedFiles: File[] = [];
   try {
-    body = await req.json();
+    if (req.headers.get("content-type")?.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      body = {};
+      formData.forEach((value, key) => {
+        if (key !== "attachments" && typeof value === "string") body[key] = value;
+      });
+      uploadedFiles = formData.getAll("attachments").filter((value): value is File => value instanceof File && value.size > 0);
+    } else {
+      body = await req.json();
+    }
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers });
+    return NextResponse.json({ error: "Invalid request" }, { status: 400, headers });
   }
 
-  const { name, email, message, website, _honeypot, turnstileToken, ...extras } =
+  const { name, email, message, website, subject, _honeypot, turnstileToken, ...extras } =
     body as Record<string, string>;
 
   if (_honeypot) {
@@ -201,6 +211,17 @@ export async function POST(req: NextRequest) {
       { error: "Invalid email address" },
       { status: 422, headers }
     );
+  }
+
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+  if (uploadedFiles.length > 3) {
+    return NextResponse.json({ error: "A maximum of three supporting files is allowed" }, { status: 422, headers });
+  }
+  for (const file of uploadedFiles) {
+    const maxSize = file.type === "application/pdf" ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (!allowedTypes.has(file.type) || file.size > maxSize) {
+      return NextResponse.json({ error: "One or more uploaded files are invalid" }, { status: 422, headers });
+    }
   }
 
   // Per-site email routing — stored as JSON in SITE_EMAILS env var
@@ -236,6 +257,11 @@ export async function POST(req: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const source = website ? ` via ${website}` : "";
   const from = process.env.FROM_EMAIL ?? "Contact Form <onboarding@resend.dev>";
+  const cleanSubject = subject?.replace(/[\r\n]/g, " ").trim().slice(0, 160);
+  const attachments = await Promise.all(uploadedFiles.map(async (file) => ({
+    filename: file.name.replace(/[^a-zA-Z0-9._-]/g, "_"),
+    content: Buffer.from(await file.arrayBuffer()),
+  })));
 
   // Send all three in parallel — admin email, confirmation, Slack + KV log
   const [{ error }] = await Promise.all([
@@ -245,9 +271,10 @@ export async function POST(req: NextRequest) {
       to: toEmail,
       ...(ccEmail ? { cc: ccEmail } : {}),
       replyTo: email,
-      subject: `New message from ${name}${source}`,
+      subject: cleanSubject || `New message from ${name}${source}`,
       text: `Name: ${name}\nEmail: ${email}\nWebsite: ${website ?? "unknown"}\n\n${message}`,
       html: adminEmailTemplate({ name, email, message, website, extras }),
+      ...(attachments.length ? { attachments } : {}),
     }),
     // Confirmation email to submitter
     resend.emails.send({
