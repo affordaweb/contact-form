@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400, headers });
   }
 
-  const { name, email, message, website, subject, _honeypot, turnstileToken, ...extras } =
+  const { name, email, message, website, subject, formType, _honeypot, turnstileToken, ...extras } =
     body as Record<string, string>;
 
   if (_honeypot) {
@@ -242,6 +242,11 @@ export async function POST(req: NextRequest) {
     } catch {
       console.error("Invalid SITE_EMAILS JSON");
     }
+  }
+
+  // Profile edits belong to the Ku-Ila administrators even when general site routing is not configured.
+  if (website === "lgbt-ku-ila" && formType === "profile-update-request") {
+    toEmail = process.env.KU_ILA_PROFILE_UPDATES_EMAIL ?? "lgbtkuila@outlook.com";
   }
 
   // Fall back to global TO_EMAIL / CC_EMAIL
