@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 // ── Turnstile verification ────────────────────────────────────────────────────
-async function verifyTurnstile(token: string): Promise<boolean> {
+async function verifyTurnstile(token: string, secret: string): Promise<boolean> {
   const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      secret: process.env.TURNSTILE_SECRET_KEY,
+      secret,
       response: token,
     }),
   });
   const data = await res.json() as { success: boolean };
   return data.success === true;
+}
+
+function turnstileSecretFor(website: string | undefined) {
+  const siteKey = website?.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+  return siteKey ? process.env[`TURNSTILE_SECRET_${siteKey}`] ?? process.env.TURNSTILE_SECRET_KEY : process.env.TURNSTILE_SECRET_KEY;
 }
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -189,11 +194,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true }, { status: 200, headers });
   }
 
-  if (process.env.TURNSTILE_SECRET_KEY) {
+  const trustedForwarder = process.env.CONTACT_FORM_FORWARDING_SECRET;
+  const forwardedByTrustedServer = Boolean(trustedForwarder && req.headers.get("x-contact-forwarding-secret") === trustedForwarder);
+  const turnstileSecret = turnstileSecretFor(website);
+  if (!forwardedByTrustedServer && turnstileSecret) {
     if (!turnstileToken) {
       return NextResponse.json({ error: "Missing verification token" }, { status: 400, headers });
     }
-    const valid = await verifyTurnstile(turnstileToken);
+    const valid = await verifyTurnstile(turnstileToken, turnstileSecret);
     if (!valid) {
       return NextResponse.json({ error: "Turnstile verification failed" }, { status: 403, headers });
     }
