@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "next": "^16.1.7",
-    "resend": "^4.2.0"
+    "resend": "^6.28.0"
   },
   "devDependencies": {
     "@types/node": "^22",
